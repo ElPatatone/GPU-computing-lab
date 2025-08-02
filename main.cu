@@ -7,6 +7,8 @@ void vectorAddCPU(float* x, float* y, float* z, int N) {
     }
 }
 
+void vectorAddKernel();
+
 void vectorAddGPU(float* x, float* y, float* z, int N) {
     // 1. allocate GPU memory
     float *x_d, *y_d, *z_d;
@@ -20,6 +22,14 @@ void vectorAddGPU(float* x, float* y, float* z, int N) {
     cudaMemcpy(y_d, y, sizeof(float)*N, cudaMemcpyHostToDevice);
     
     // 3. perform computation on GPU
+    // call a GPU kernel function (launch a grid of threads)
+    
+    // N here is the size of the vectors, but it also is the maximum number of threads
+    // we would need to have 1 thred per vector element.
+    const unsigned int numThreadsPerBlock = 512;
+    const unsigned int numBlocks = N/512;
+
+    // vectorAddKernel(x_d, y_d, z_d, N);
     
     // 4. copy data from GPU memory to CPU memory
     cudaMemcpy(z_d, z, sizeof(float)*N, cudaMemcpyDeviceToHost);
