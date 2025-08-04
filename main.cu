@@ -1,13 +1,33 @@
-#include <stdio.h>
 #include <time.h>
+#include <stdio.h>
 
-void vectorAddCPU(float* x, float* y, float* z, int N) {
-    for (int i = 0; i < N; i++) {
-        z[i] = x[i] + y[i];
-    }
+__host__ __device__ float add(float a, float b) {
+    return a + b;
 }
 
-void vectorAddKernel();
+void vectorAddCPU(float* x, float* y, float* z, int N) {
+    clock_t start = clock();
+
+    for (int i = 0; i < N; i++) {
+        z[i] = add(x[i],  y[i]);
+    }
+
+    clock_t end = clock();
+
+    double timeTaken = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("CPU computation took: %.10f seconds\n", timeTaken);
+}
+
+__global__ void vectorAddKernel(float* x, float* y, float* z, int N) {
+
+    // this approach to parallel programming is called single program multiple data
+    // multiple threads executing the same program operating on a different set of data
+    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; 
+    // if the index of the thread is out of bounds it will not be counted
+    if (i < N) {
+        z[i] = add(x[i], y[i]);
+    }
+};
 
 void vectorAddGPU(float* x, float* y, float* z, int N) {
     // 1. allocate GPU memory
@@ -27,18 +47,39 @@ void vectorAddGPU(float* x, float* y, float* z, int N) {
     // N here is the size of the vectors, but it also is the maximum number of threads
     // we would need to have 1 thred per vector element.
     const unsigned int numThreadsPerBlock = 512;
-    const unsigned int numBlocks = N/512;
+    // we do ceiling divion to cover the case where N is not a multiple of the number.
+    // without it the program would create less threads than we need.
+    const unsigned int numBlocks = (N + numThreadsPerBlock - 1) /numThreadsPerBlock;
 
-    // vectorAddKernel(x_d, y_d, z_d, N);
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start, 0);
+    // each thread will execute this function
+    vectorAddKernel<<<numBlocks, numThreadsPerBlock>>>(x_d, y_d, z_d, N);
+    cudaEventRecord(stop, 0);
+    // tells the CPU to wait for the GPU to finish the events specified before 
+    // it continues with executing the code.
+    // we need to ask the CPU to wait for the GPU events to be done as the CPU has no 
+    // access to these events and needs the GPU to tell it when it is done. 
+    cudaEventSynchronize(stop);
+
+    float timeTaken = 0;
+    cudaEventElapsedTime(&timeTaken, start, stop);
+
+    printf("GPU computation took: %.10f milliseconds\n", timeTaken);
+    printf("GPU computation took: %.10f seconds\n", timeTaken/1000);
     
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
     // 4. copy data from GPU memory to CPU memory
-    cudaMemcpy(z_d, z, sizeof(float)*N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(z, z_d, sizeof(float)*N, cudaMemcpyDeviceToHost);
 
     // 5. deallocate GPU memory
-    cudaFree(&x_d);
-    cudaFree(&y_d);
-    cudaFree(&z_d);
-
+    cudaFree(x_d);
+    cudaFree(y_d);
+    cudaFree(z_d);
 }
 
 
@@ -56,6 +97,7 @@ int main (int argc, char *argv[]) {
     }
 
     vectorAddCPU(x, y, z, N);
+    vectorAddGPU(x, y, z, N);
 
     return 0;
 }
