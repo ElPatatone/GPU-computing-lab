@@ -63,7 +63,15 @@ void vectorAddGPU(float* x, float* y, float* z, int N) {
     // it continues with executing the code.
     // we need to ask the CPU to wait for the GPU events to be done as the CPU has no 
     // access to these events and needs the GPU to tell it when it is done. 
-    cudaEventSynchronize(stop);
+    //
+    // what happens is that the GPU commands que at this point only has the following:
+    // start event record -> kernel launch -> stop event record 
+    // so the CPU will wait until all those things are done before it moves on
+    // all asynchronous operations go on the GPU que.
+    cudaError_t error = cudaEventSynchronize(stop);
+    if (error != cudaSuccess) {
+        printf("[Error] Kernel failed to launch: %s", cudaGetErrorString(error));
+    }
 
     float timeTaken = 0;
     cudaEventElapsedTime(&timeTaken, start, stop);
