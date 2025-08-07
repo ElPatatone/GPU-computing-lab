@@ -1,8 +1,8 @@
 #include <time.h>
 #include <stdio.h>
 
-#define WIDTH 2048
-#define HEIGHT 2048 
+#define WIDTH 8192
+#define HEIGHT 8192
 #define IMAGE_SIZE (WIDTH * HEIGHT)
 
 __global__ void rgbTogrey_kernel(unsigned char *r, unsigned char *g, 
@@ -44,7 +44,6 @@ void rgbTogrey_gpu(unsigned char *r, unsigned char *g,
     cudaMemcpy(r_d, r, sizeof(unsigned char)*IMAGE_SIZE, cudaMemcpyHostToDevice);
     cudaMemcpy(g_d, g, sizeof(unsigned char)*IMAGE_SIZE, cudaMemcpyHostToDevice);
     cudaMemcpy(b_d, b, sizeof(unsigned char)*IMAGE_SIZE, cudaMemcpyHostToDevice);
-    cudaMemcpy(grey_d, grey, sizeof(unsigned char)*IMAGE_SIZE, cudaMemcpyHostToDevice);
 
     // 3. run the kernel
     dim3 numThreadsPerBlock(32, 32);
@@ -59,6 +58,12 @@ void rgbTogrey_gpu(unsigned char *r, unsigned char *g,
     rgbTogrey_kernel<<<numBlocks, numThreadsPerBlock>>>(r_d, g_d, b_d, grey_d);
     cudaEventRecord(stop, 0);
 
+    cudaError_t err = cudaGetLastError();  // Check launch errors immediately
+    if (err != cudaSuccess) {
+        printf("Kernel launch failed: %s\n", cudaGetErrorString(err));
+    }
+    cudaDeviceSynchronize();  // Wait for kernel to finish
+    
     cudaError_t error = cudaEventSynchronize(stop);
     if (error != cudaSuccess) {
         printf("[Error] Kernel failed to launch: %s", cudaGetErrorString(error));
@@ -97,21 +102,37 @@ int main(int argc, char *argv[]) {
     // unsigned char r[IMAGE_SIZE] = {255, 0, 0, 255};
     // unsigned char g[IMAGE_SIZE] = {0, 255, 0, 255};
     // unsigned char b[IMAGE_SIZE] ={0, 0, 255, 255};
-    unsigned char *greyPlanar = (unsigned char*) malloc(IMAGE_SIZE);
+    unsigned char *grey_cpu = (unsigned char*) malloc(IMAGE_SIZE);
+    unsigned char *grey_gpu = (unsigned char*) malloc(IMAGE_SIZE);
     
-    rgbTogrey_gpu(r, g, b, greyPlanar);
+    rgbTogrey_gpu(r, g, b, grey_gpu);
 
     clock_t start = clock();
-    rgbTogrey_cpu(r, g, b, greyPlanar);
+    rgbTogrey_cpu(r, g, b, grey_cpu);
     clock_t stop = clock();
 
     float timeTaken = (float) (stop - start) / CLOCKS_PER_SEC;
     printf("CPU computation took: %.10f seconds\n", timeTaken);
 
+    for (int i = 0; i < IMAGE_SIZE; i++) {
+        if (grey_cpu[i] != grey_gpu[i]) {
+            printf("Mismatch in the elements at index: %d\n", i);
+            printf("grey_cpu: %d\n", grey_cpu[i]);
+            printf("grey_gpu: %d\n", grey_gpu[i]);
+        }
+    }
+
+    for (int i = 0; i < 10; i++) {
+        printf("index: %d\n", i);
+        printf("grey_gpu: %d\n", grey_gpu[i]);
+        printf("grey_cpu: %d\n", grey_cpu[i]);
+    }
+
     free(r);
     free(g);
     free(b);
-    free(greyPlanar);
+    free(grey_cpu);
+    free(grey_gpu);
 
     return 0;
 }
