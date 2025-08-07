@@ -76,7 +76,7 @@ void vectorAddGPU(float* x, float* y, float* z, int N) {
     float timeTaken = 0;
     cudaEventElapsedTime(&timeTaken, start, stop);
 
-    printf("GPU computation took: %.10f milliseconds\n", timeTaken);
+    // printf("GPU computation took: %.10f milliseconds\n", timeTaken);
     printf("GPU computation took: %.10f seconds\n", timeTaken/1000);
     
     cudaEventDestroy(start);
@@ -104,8 +104,37 @@ int main (int argc, char *argv[]) {
         y[i] = rand();
     }
 
+    clock_t CPUstart = clock();
+
     vectorAddCPU(x, y, z, N);
+
+    clock_t CPUstop = clock();
+
+
+    double CPUtimeTaken = (double)(CPUstop - CPUstart) / CLOCKS_PER_SEC;
+    printf("CPU total time taken: %.10f seconds\n", CPUtimeTaken);
+
+
+    // timing the full time taken including the allocation and deallocationg of 
+    // memory
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    
+    cudaEventRecord(start);
+
     vectorAddGPU(x, y, z, N);
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    float timeTaken = 0;
+    cudaEventElapsedTime(&timeTaken, start, stop);
+    
+    printf("GPU total time taken: %.10f seconds \n", timeTaken/1000);
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
     return 0;
 }
