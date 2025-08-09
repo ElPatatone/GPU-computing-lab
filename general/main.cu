@@ -1,7 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 
-__global__ void vectorAddKernel(int *z, int N) {
+__global__ void kernel(int *z, int N) {
     unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; 
     if (i < N) {
         z[i] = threadIdx.x;
@@ -20,7 +20,7 @@ void display(int *z, int N, const unsigned int numBlocks, const unsigned int num
     cudaEventCreate(&stop);
     
     cudaEventRecord(start, 0);
-    vectorAddKernel<<<numBlocks, numThreadsPerBlock>>>(z_d, N);
+    kernel<<<numBlocks, numThreadsPerBlock>>>(z_d, N);
     cudaEventRecord(stop, 0);
     cudaError_t err = cudaGetLastError();  // Check launch errors immediately
     if (err != cudaSuccess) {
@@ -36,7 +36,7 @@ void display(int *z, int N, const unsigned int numBlocks, const unsigned int num
 
     float timeTaken = 0;
     cudaEventElapsedTime(&timeTaken, start, stop);
-    printf("Kernel computation took: %.10f seconds\n", timeTaken/1000);
+    // printf("Kernel computation took: %.10f seconds\n", timeTaken/1000);
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
