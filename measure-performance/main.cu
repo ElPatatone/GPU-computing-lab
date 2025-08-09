@@ -69,11 +69,15 @@ int main(int argc, char *argv[]) {
     //     printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
     // }
 
-    printf("\n");
+    // printf("\n");
 
-    int numThreadsPerBlock = 16;
+    // max number of threads per block on RTX 2060
+    int numThreadsPerBlock = 1024;
     float elapsed = run_test(numThreadsPerBlock);
     printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
+
+    printf("\n");
+
 
     //  for (int i = 0; i < N; i++) {
     //     if (i % 16 == 0 && i != 0) {

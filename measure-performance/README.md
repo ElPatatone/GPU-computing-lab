@@ -47,3 +47,25 @@ Threads per block       Time (ms)
 16                      140.60
 ```
 
+Nvidia RTX 2060 (Turing microarchitecture):
+- 30 SMs
+- 1920 cuda cores
+- 64 cuda cores per SM
+
+Each cuda core executes 1 thread's instruction per cycle (in optimal conditions). 
+Threads are run in `warps` of 32. So the following can be said:
+- 1 SM has 64 cuda cores = 64/32 = 2 warps per cycle
+- 30 SMs = 30x2 = 60 warps per cycle
+- Total threads GPU can handle = 60x32 = 1920 threads per cycle = 1920 cuda cores
+
+In the code example the kernel is launched with:
+- 262144 threads
+- 32 threads per block
+- we get 8192 warps in total
+To make all of this run in 1 cycle we would need 262144 cuda cores or `4096 SMs`.
+In reality on a `RTX 2060` the maximum number of warps we can run in 1 cycle is 60,
+so for 8192 warps we would need `137 cycles minimum` (8192/60). 
+
+[look up]
+latency hiding?  
+
