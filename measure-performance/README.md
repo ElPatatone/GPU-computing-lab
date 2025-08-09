@@ -20,3 +20,30 @@ Threads per block       Time (ms)
 512                     75.08
 1024                    75.07
 ```
+
+Another thing I found was that instead of doing a cold start for the kernel on the GPU,
+having a warm up run provides performance gains on that first run the kernel makes.
+
+Code for the warm up run:
+```cuda
+for (int i = 0; i < 100; i++) {
+    kernel<<<1, 1>>>(data_d);
+}
+```
+
+Without warm up run:
+```shell
+Total number of threads: 262144
+
+Threads per block       Time (ms)
+16                      192.44
+```
+
+With warm up:
+```shell
+Total number of threads: 262144
+
+Threads per block       Time (ms)
+16                      140.60
+```
+

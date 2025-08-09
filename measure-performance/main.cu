@@ -29,6 +29,11 @@ float run_test(int numThreadsPerBlock) {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
+    // warmup run
+    for (int i = 0; i < 100; i++) {
+        kernel<<<1, 1>>>(data_d);
+    }
+
     cudaEventRecord(start);
     kernel<<<numBlocks, numThreadsPerBlock>>>(data_d);
     cudaEventRecord(stop);
@@ -59,10 +64,16 @@ int main(int argc, char *argv[]) {
 
     printf("Total number of threads: %d\n\n", TOTAL_THREADS);
     printf("Threads per block\tTime (ms)\n");
-    for(int numThreadsPerBlock = 1; numThreadsPerBlock <= 1024; numThreadsPerBlock*=2) {
-        float elapsed = run_test(numThreadsPerBlock);
-        printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
-    }
+    // for(int numThreadsPerBlock = 1; numThreadsPerBlock <= 1024; numThreadsPerBlock*=2) {
+    //     float elapsed = run_test(numThreadsPerBlock);
+    //     printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
+    // }
+
+    printf("\n");
+
+    int numThreadsPerBlock = 16;
+    float elapsed = run_test(numThreadsPerBlock);
+    printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
 
     //  for (int i = 0; i < N; i++) {
     //     if (i % 16 == 0 && i != 0) {
