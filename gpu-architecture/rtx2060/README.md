@@ -9,6 +9,10 @@ Threads are run in `warps` of 32. So the following can be said:
 - 30 SMs = 30x2 = 60 warps per cycle
 - Total threads GPU can handle = 60x32 = 1920 threads per cycle = 1920 cuda cores
 
+However the `RTX 2060` has a max number of resident threads per SM of `1024`, 
+these are in what I would describe as a waiting room so when one thread stalls or 
+waits for data to come back, another thread can immediatly start running.
+
 In the code example the kernel is launched with:
 - 262144 threads
 - 32 threads per block
