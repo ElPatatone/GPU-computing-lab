@@ -15,7 +15,8 @@ __global__ void kernel(float *data) {
 float run_test(int numThreadsPerBlock) {
     // size of data
     int N = 128;
-    int numBlocks = TOTAL_THREADS/numThreadsPerBlock;
+    // int numBlocks = TOTAL_THREADS/numThreadsPerBlock;
+    int numBlocks = 20;
 
     // 1. allocate mem
     float *data = (float*) malloc(N*sizeof(float));
@@ -61,24 +62,50 @@ float run_test(int numThreadsPerBlock) {
 }
 
 int main(int argc, char *argv[]) {
+    int device = 0;
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, device);
+    printf("Device %d: %s\n", device, prop.name);
+    printf("  Compute capability: %d.%d\n", prop.major, prop.minor);
+    printf("  Warp size: %d\n", prop.warpSize);
+    printf("  Max threads per block: %d\n", prop.maxThreadsPerBlock);
+    printf("  Max threads per multiprocessor: %d\n", prop.maxThreadsPerMultiProcessor);
+    printf("  Number of SMs: %d\n", prop.multiProcessorCount);
+    printf("\n");
+
 
     printf("Total number of threads: %d\n\n", TOTAL_THREADS);
     printf("Threads per block\tTime (ms)\n");
-    // for(int numThreadsPerBlock = 1; numThreadsPerBlock <= 1024; numThreadsPerBlock*=2) {
-    //     float elapsed = run_test(numThreadsPerBlock);
-    //     printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
-    // }
+    for(int numThreadsPerBlock = 1; numThreadsPerBlock <= 1024; numThreadsPerBlock*=2) {
+        float elapsed = run_test(numThreadsPerBlock);
+        printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
+    }
 
-    // printf("\n");
+    printf("\n");
 
     // 1020 is max number of threads per block on RTX 2060
-    int numThreadsPerBlock = 1025;
+    int numThreadsPerBlock = 1024;
     float elapsed = run_test(numThreadsPerBlock);
     printf("%d\t\t\t%0.2f\n", numThreadsPerBlock, elapsed);
 
     printf("\n");
+    
+    int threadsPerBlock = 32;
+    size_t dynamicMem = 0;
 
+    int numBlocksPerSM;
+    cudaError_t error = cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        &numBlocksPerSM,
+        kernel,
+        threadsPerBlock,
+        dynamicMem
+    );
 
+    printf("\n");
+    printf("Blocks per SM: %d\n", numBlocksPerSM);
+    printf("Total active blocks on GPU: %d\n", 
+           numBlocksPerSM * prop.multiProcessorCount);
+    
     //  for (int i = 0; i < N; i++) {
     //     if (i % 16 == 0 && i != 0) {
     //        printf("\n");

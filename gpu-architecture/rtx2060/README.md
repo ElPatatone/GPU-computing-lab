@@ -1,3 +1,7 @@
+> The information presented in here is not complete/final. I am actively researching 
+things and I will regularly update things as my understanding improves and abstraction
+layers are removed.
+
 Nvidia RTX 2060 (Turing microarchitecture):
 - 30 SMs
 - 1920 cuda cores
@@ -84,6 +88,13 @@ Error launching the kernel: invalid configuration argument
 This is because the `RTX 2060` has a compute capability of 7.5, which specifies the 
 max number of threads per block as 1024. This has been the case since March 2010, once
 compute capability reached 2.x and higher.
+
+There is no clear 1-to-1 mapping for the blocks in the grid and the SMs in the GPU.
+It is a `dynamic assignment` where the CUDA global scheduler distributes blocks to the 
+SMs in a circular(round-robin) fashion. SMs will take blocks in turns until all the 
+blocks in the grid are assigned to a SM. 
+This approach balances the workload, ensuring most SMs receive some work even if light
+instead of leaving SMs idle while others are overloaded.
 
 ## References
 1. [Nvidia TU106 breakdown](https://www.techpowerup.com/gpu-specs/nvidia-tu106.g875) 
