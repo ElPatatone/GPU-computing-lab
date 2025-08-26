@@ -2,21 +2,24 @@
 
 #define TOTAL_THREADS 262144
 
-__global__ void kernel(float *data) {
+__global__ void kernel(float *data, int N) {
     unsigned int idx = blockDim.x * blockIdx.x + threadIdx.x;
-    float x = 0;
-    // arithmetic operation that will not get optimised by the compiler
-    for (int i = 0; i < 1000000; i++) {
-        x = x * 2 + 0.5;    
+
+    if (idx < N) {
+        float x = 0;
+        // arithmetic operation that will not get optimised by the compiler
+        for (int j = 0; j < 1000000; j++) {
+            x = x * 2 + 0.5;    
+        }
+        data[idx] = x;
     }
-    data[idx] = x;
 }
 
 float run_test(int numThreadsPerBlock) {
     // size of data
-    int N = 128;
-    // int numBlocks = TOTAL_THREADS/numThreadsPerBlock;
-    int numBlocks = 20;
+    int N = TOTAL_THREADS;
+    int numBlocks = TOTAL_THREADS/numThreadsPerBlock;
+    // int numBlocks = 20;
 
     // 1. allocate mem
     float *data = (float*) malloc(N*sizeof(float));
@@ -32,11 +35,11 @@ float run_test(int numThreadsPerBlock) {
 
     // warmup run
     for (int i = 0; i < 100; i++) {
-        kernel<<<1, 1>>>(data_d);
+        kernel<<<1, 1>>>(data_d, N);
     }
 
     cudaEventRecord(start);
-    kernel<<<numBlocks, numThreadsPerBlock>>>(data_d);
+    kernel<<<numBlocks, numThreadsPerBlock>>>(data_d, N);
     cudaEventRecord(stop);
 
     cudaError_t error = cudaGetLastError();
