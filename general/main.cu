@@ -1,4 +1,4 @@
-#include <time.h>
+// #include <time.h>
 #include <stdio.h>
 
 __global__ void kernel(int *z, int N) {
